@@ -12,9 +12,7 @@ const HomeScreen: React.FC = () => {
           <Home />
         </ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        {/* Placeholder for future content */}
-      </ThemedView>
+      <ThemedView style={styles.stepContainer}></ThemedView>
       <ThemedView style={styles.stepContainer}>
         {/* Placeholder for future content */}
       </ThemedView>

@@ -31,5 +31,11 @@ module.exports = {
       typedRoutes: true,
     },
     entryPoint: "./app/index.tsx",
+    extra: {
+      GEOAPIFY_API_KEY:
+        process.env.GEOAPIFY_API_KEY || "default_key_if_not_set",
+      GEOAPIFY_API_ID: process.env.GEOAPIFY_API_ID || "default_id_if_not_set",
+      // autres variables d'environnement ici si nécessaire
+    },
   },
 };
