@@ -3,15 +3,13 @@ import { StyleSheet, View, Pressable, Text } from "react-native";
 
 interface ButtonImageProps {
   label: string;
+  onPress?: () => void;
 }
 
-const ButtonImage: React.FC<ButtonImageProps> = ({ label }) => {
+const ButtonImage: React.FC<ButtonImageProps> = ({ label, onPress }) => {
   return (
     <View style={styles.buttonContainer}>
-      <Pressable
-        style={styles.button}
-        onPress={() => alert("Merci pour ce signalement.")}
-      >
+      <Pressable style={styles.button} onPress={onPress}>
         <Text style={styles.buttonLabel}>{label}</Text>
       </Pressable>
     </View>

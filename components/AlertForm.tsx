@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
+  Button,
   View,
   Text,
   TextInput,
-  Button,
   Image,
   Pressable,
   ScrollView,
   Alert,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-// import * as ImagePicker from "expo-image-picker";
+//import * as ImagePicker from "expo-image-picker";
 import ImagePicker from "expo-image-picker";
+import * as MailComposer from "expo-mail-composer";
 
 import { Ionicons } from "@expo/vector-icons";
 import ButtonImage from "./ButtonImage";
@@ -31,7 +32,19 @@ const AlertForm: React.FC = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [time, setTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const predefinedEmail = "florence.martin14@free.fr";
+
+  useEffect(() => {
+    const checkMailComposerAvailability = async () => {
+      const available = await MailComposer.isAvailableAsync();
+      setIsAvailable(available);
+    };
+    checkMailComposerAvailability();
+  }, []);
 
   const handleChoosePhoto = async () => {
     // Demande de permission pour accéder à la bibliothèque de médias
@@ -46,15 +59,78 @@ const AlertForm: React.FC = () => {
 
     // Lancement de la bibliothèque de médias pour sélectionner une image
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      setPhoto(result.assets[0].uri); // Met à jour l'état avec l'URI de l'image sélectionnée
-      // setPhoto(result.assets[0]); // Mise à jour de l'état avec la première image sélectionnée
+      if (!result.canceled && result.assets.length > 0) {
+        setPhoto(result.assets[0].uri); // Met à jour l'état avec l'URI de l'image sélectionnée
+      } // Met à jour l'état avec l'URI de l'image sélectionnée
+    }
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    setShowDatePicker(false);
+    setDate(currentDate);
+  };
+
+  const onTimeChange = (event: any, selectedTime?: Date) => {
+    const currentTime = selectedTime || time;
+    setShowTimePicker(false);
+    setTime(currentTime);
+  };
+
+  const sendEmail = async () => {
+    if (!isAvailable) {
+      Alert.alert("Erreur", "Le service de messagerie n'est pas disponible.");
+      return;
+    }
+
+    const options = {
+      recipients: [predefinedEmail],
+      subject: `Alerte: ${alertType}`,
+      body: `
+        Description: ${description}
+        Nom: ${name}
+        Prénom: ${firstname}
+        Adresse: ${address}
+        Code postal: ${postcode}
+        Ville: ${city}
+        Téléphone: ${phoneNumber}
+        Date: ${date.toLocaleDateString()}
+        Heure: ${time.toLocaleTimeString()}
+        ${photo ? "Photo: Voir la pièce jointe." : ""}
+      `,
+      attachments: photo ? [photo] : [],
+    };
+
+    try {
+      const result = await MailComposer.composeAsync(options);
+
+      if (result.status === "sent") {
+        setStatus("Succès: email envoyé.");
+        Alert.alert("Succès", "Email envoyé avec succès.");
+      } else if (result.status === "cancelled") {
+        setStatus("Annulé: l'email n'a pas été envoyé.");
+        Alert.alert("Annulé", "Envoi de l'email annulé.");
+      } else {
+        setStatus(`Status: email ${result.status}`);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setStatus(`Erreur: email failed with error ${error.message}`);
+        Alert.alert("Erreur", `Erreur: ${error.message}`);
+      } else {
+        setStatus("Erreur: email failed with an unknown error");
+        Alert.alert(
+          "Erreur",
+          "Erreur inconnue lors de la préparation de l'email."
+        );
+      }
     }
   };
 
@@ -151,7 +227,7 @@ const AlertForm: React.FC = () => {
               mode="date"
               is24Hour={true}
               display="default"
-              //   onChange={onChangeDate}
+              onChange={onDateChange}
             />
           )}
 
@@ -168,29 +244,30 @@ const AlertForm: React.FC = () => {
               mode="time"
               is24Hour={true}
               display="default"
-              //   onChange={}
+              onChange={onTimeChange}
             />
           )}
         </View>
-
         <Button title="Choisir une photo" onPress={handleChoosePhoto} />
-
         {photo && (
           <View>
-            <Text>Photo s�lectionn�e :</Text>
+            <Text>Photo sélectionnée :</Text>
             <Image
-              //   source={{ uri: photo.uri }}
+              source={{ uri: photo }}
               style={{ width: 200, height: 200 }}
             />
           </View>
         )}
 
-        <Pressable
-          style={styles.footerContainer}
-          // onPress={}
-        >
-          <ButtonImage label="Envoyer l'alerte" />
+        <Pressable style={styles.footerContainer}>
+          <ButtonImage label="Envoyer l'alerte" onPress={sendEmail} />
         </Pressable>
+
+        {status && (
+          <View style={styles.statusContainer}>
+            <Text>{status}</Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -266,4 +343,5 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
   },
+  statusContainer: {},
 });
